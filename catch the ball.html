@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catch the Ball Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #f0f0f0;
+        }
+        canvas {
+            background: #000;
+            border: 1px solid #fff;
+        }
+        #startMenu {
+            position: absolute;
+            text-align: center;
+        }
+        #startButton {
+            font-size: 20px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="startMenu">
+        <h1>Catch the Ball Game</h1>
+        <button id="startButton">Start Game</button>
+    </div>
+    <canvas id="gameCanvas" width="480" height="320" style="display:none;"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startMenu = document.getElementById('startMenu');
+        const startButton = document.getElementById('startButton');
+
+        const paddleHeight = 10;
+        const paddleWidth = 75;
+        let paddleX = (canvas.width - paddleWidth) / 2;
+
+        const ballRadius = 10;
+        let x = canvas.width / 2;
+        let y = canvas.height / 2;
+        let dx = 2;
+        let dy = 2;
+
+        let rightPressed = false;
+        let leftPressed = false;
+        let bounceCount = 0;
+        let highScore = localStorage.getItem('highScore') || 0;
+
+        document.addEventListener('keydown', keyDownHandler, false);
+        document.addEventListener('keyup', keyUpHandler, false);
+        document.addEventListener('mousemove', mouseMoveHandler, false);
+        startButton.addEventListener('click', startGame);
+
+        function keyDownHandler(e) {
+            if (e.key == "Right" || e.key == "ArrowRight") {
+                rightPressed = true;
+            } else if (e.key == "Left" || e.key == "ArrowLeft") {
+                leftPressed = true;
+            }
+        }
+
+        function keyUpHandler(e) {
+            if (e.key == "Right" || e.key == "ArrowRight") {
+                rightPressed = false;
+            } else if (e.key == "Left" || e.key == "ArrowLeft") {
+                leftPressed = false;
+            }
+        }
+
+        function mouseMoveHandler(e) {
+            const relativeX = e.clientX - canvas.offsetLeft;
+            if (relativeX > 0 && relativeX < canvas.width) {
+                paddleX = relativeX - paddleWidth / 2;
+            }
+        }
+
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+            ctx.fillStyle = "#0095DD";
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawPaddle() {
+            ctx.beginPath();
+            ctx.rect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
+            ctx.fillStyle = "#0095DD";
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawScore() {
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "#0095DD";
+            ctx.fillText("Score: " + bounceCount, 8, 20);
+        }
+
+        function drawHighScore() {
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "#0095DD";
+            ctx.fillText("High Score: " + highScore, canvas.width - 120, 20);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBall();
+            drawPaddle();
+            drawScore();
+            drawHighScore();
+
+            // Ball collision with left and right walls
+            if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
+                dx = -dx;
+            }
+
+            // Ball collision with top wall
+            if (y + dy < ballRadius) {
+                dy = -dy;
+            }
+
+            // Ball collision with bottom (paddle area)
+            else if (y + dy > canvas.height - ballRadius) {
+                if (x > paddleX && x < paddleX + paddleWidth) {
+                    dy = -dy;
+                    bounceCount++;
+                } else {
+                    gameOver();
+                    return;
+                }
+            }
+
+            x += dx;
+            y += dy;
+
+            if (rightPressed && paddleX < canvas.width - paddleWidth) {
+                paddleX += 7;
+            } else if (leftPressed && paddleX > 0) {
+                paddleX -= 7;
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        function startGame() {
+            startMenu.style.display = 'none';
+            canvas.style.display = 'block';
+            resetGame();
+            draw();
+        }
+
+        function resetGame() {
+            x = canvas.width / 2;
+            y = canvas.height / 2;
+            dx = 2;
+            dy = 2;
+            bounceCount = 0;
+            paddleX = (canvas.width - paddleWidth) / 2;
+        }
+
+        function gameOver() {
+            if (bounceCount > highScore) {
+                highScore = bounceCount;
+                localStorage.setItem('highScore', highScore);
+            }
+            alert(`Game Over! You bounced the ball ${bounceCount} times. High Score: ${highScore}`);
+            document.location.reload();
+        }
+    </script>
+</body>
+</html>
